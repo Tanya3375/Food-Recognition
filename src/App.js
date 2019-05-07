@@ -19,23 +19,23 @@ const mapProb = (prob) => {
 
 const Predictions = ({topK}) => {
   return (
-    <table className='predictions'>
+    <center><table className='predictions'>
       <tbody>
       <tr>
         <th className='th'>Prediction</th>
-        <th>Probability</th>
+        <th>Calories you consumed</th>
       </tr>
       { topK.map((pred, i) =>
         <tr key={i}>
-          <td className='predLabel'>{con(pred.name)}</td>
+          <td className='predLabel'>{pred.name}</td>
           <td className='predPercent'>
-            <span className='predPercentLabel'>{(pred.probability*100).toFixed(5)}%</span>
+            <span className='predPercentLabel'>{con(pred.name)}</span>
             <div className='predBar' style={{width: mapProb(pred.probability)}}/>
           </td>
         </tr>
       )}
       </tbody>
-    </table>
+    </table></center>
   );
 }
 
@@ -249,38 +249,36 @@ class App extends Component {
     } = this.state;
     return (
       <div className="App">
-        <h1>Food Classification Demo with Keras.js!</h1>
+        <center><h1>Food Recognition with Calorie Estimation</h1></center>
         { !modelLoaded ?
         <p className='intro'>
-          To get started, click the Load Model button to download the model that
-          we have built and exported using the Python notebook. The file may be
-          fairly large for some (85 MB), so keep that in mind if progress seems stuck.
+          <center>To get started, click the Load Model button to load the model.</center>
         </p>
         : ''}
         <div className='init'>
-        { !modelLoaded && !modelLoading ? <button onClick={this.loadModel}>Load Model (85 MB)</button> : ''}
+        { !modelLoaded && !modelLoading ? <center><button onClick={this.loadModel}>Load Model (85 MB)</button></center> : ''}
         { !modelLoaded && modelLoading ?
-          <p className='loading'>LOADING MODEL: {loadingPercent}%</p>
+          <p className='loading'><center>LOADING MODEL: {loadingPercent}%</center></p>
           : ''}
         { modelLoaded && imageLoading ?
           <p className='loading'>LOADING IMAGE</p>
           : ''}
         { modelLoaded && imageLoadingError ?
-          <p className='error'>ERROR LOADING IMAGE.<br/>TRY DIFFERENT URL</p>
+          <p className='error'><center>ERROR LOADING IMAGE.<br/>TRY DIFFERENT URL</center></p>
           : ''}
         { modelLoaded && modelRunning ?
-          <p className='loading'>CLASSIFYING: {classifyPercent}%</p>
+          <p className='loading'><center>CLASSIFYING: {classifyPercent}%</center></p>
           : ''}
         </div>
         <div className='interactive'>
           { modelLoaded && !modelRunning && !imageLoading ?
           <p>
-            Food Image URL: <input type='text' ref={(input) => { this.urlInput = input; }}/>
+            <center>Food Image URL: <input type='text' ref={(input) => { this.urlInput = input; }}/>
             <br/><br/>
-            <button onClick={this.classifyNewImage}>Classify Image</button>
+            <button onClick={this.classifyNewImage}>Classify Image</button></center>
           </p>
           : '' }
-          <canvas id='input-canvas' width='299' height='299'/>
+          <center><canvas id='input-canvas' width='299' height='299'/></center>
           { topK ? <Predictions topK={topK}/> : ''}
         </div>
       </div>
