@@ -7,7 +7,6 @@ import ops from 'ndarray-ops';
 import { food101topK } from './utils';
 import { con } from './utils';
 
-const loadImage = window.loadImage;
 
 const mapProb = (prob) => {
   if (prob * 100 < 2) {
@@ -44,6 +43,9 @@ class App extends Component {
   constructor() {
     super();
 
+
+    localStorage.setItem("consumed",0)
+
     let hasWebgl = false;
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -65,8 +67,8 @@ class App extends Component {
       loadingPercent: 0,
       classifyPercent: 0,
       topK: null,
-      hasWebgl,
-      url: 'https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&w=1000&q=80'
+      inputTaken: false,
+      hasWebgl
     };
   }
 
@@ -101,7 +103,7 @@ class App extends Component {
         modelLoaded: true
       });
 
-      setTimeout(() => this.loadImageToCanvas(this.state.url), 100);
+      setTimeout(() => this.loadImageToCanvas(), 100);
     })
     .catch(err => {
       clearInterval(interval);
@@ -114,9 +116,10 @@ class App extends Component {
     });
   }
 
-  loadImageToCanvas = (url) => {
+  loadImageToCanvas = () => {
     console.log('Loading Image');
-    if (!url) {
+    var file = document.getElementById('file')
+    if (!file.value) {
       return;
     };
 
@@ -127,13 +130,29 @@ class App extends Component {
       classifyPercent: 0,
       topK: null
     });
-
-    loadImage(
-      url,
-      img => {
-        if (img.type === 'error') {
-	  alert("Access to image at this URL is denied.");
-          console.log('Error loading image');
+      
+      var input, fr, img
+      input = document.getElementById('file');
+      if (!input) {
+            console.log("Um, couldn't find the imgfile element.");
+          this.setState({
+            imageLoadingError: true,
+            imageLoading: false,
+            modelRunning: false,
+            url: null
+          });
+        }
+        else if (!input.files) {
+            console.log("This browser doesn't seem to support the `files` property of file inputs.");
+          this.setState({
+            imageLoadingError: true,
+            imageLoading: false,
+            modelRunning: false,
+            url: null
+          });
+        }
+        else if (!input.files[0]) {
+            console.log("Please select a file before clicking 'Load'");
           this.setState({
             imageLoadingError: true,
             imageLoading: false,
@@ -141,29 +160,35 @@ class App extends Component {
             url: null
           });
 
-        } else {
-          console.log('Image Loaded');
-          const ctx = document.getElementById('input-canvas').getContext('2d');
-          ctx.drawImage(img, 0, 0);
+        }
+        else {
+            file = input.files[0];
+            fr = new FileReader();
+            fr.onload = createImage;
+            fr.readAsDataURL(file);
           this.setState({
             imageLoadingError: false,
             imageLoading: false,
             modelRunning: true
           });
+        }
+        function createImage() {
+            img = new Image();
+            img.onload = imageLoaded;
+            img.src = fr.result;
+        }
+
+        function imageLoaded() {
+            var canvas = document.getElementById("input-canvas")
+            canvas.width = 299;
+            canvas.height = 299;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img,0,0,299,299);	
+        }
           setTimeout(() => {
             this.runModel();
           }, 1000)
-        }
-      },
-      {
-        maxWidth: 299,
-        maxHeight: 299,
-        cover: true,
-        crop: true,
-        canvas: true,
-        crossOrigin: 'Anonymous'
-      }
-    );
+
   }
 
   runModel = () => {
@@ -178,9 +203,6 @@ class App extends Component {
     );
     const { data, width, height } = imageData;
 
-    // data processing
-    // see https://github.com/fchollet/keras/blob/master/keras/applications/imagenet_utils.py
-    // and https://github.com/fchollet/keras/blob/master/keras/applications/inception_v3.py
     let dataTensor = ndarray(new Float32Array(data), [ width, height, 4 ]);
     let dataProcessedTensor = ndarray(new Float32Array(width * height * 3), [
       width,
@@ -228,12 +250,47 @@ class App extends Component {
   }
 
   classifyNewImage = () => {
-    const newUrl = this.urlInput.value;
-    this.setState({
-      url: this.urlInput.value
-    });
-    console.log('classifying new image', newUrl);
-    this.loadImageToCanvas(newUrl);
+    console.log('classifying new image', );
+    this.loadImageToCanvas();
+
+  }
+  showData = () => {
+	var sug = parseInt(window.localStorage.getItem('suggested'));
+	var cons = parseInt(window.localStorage.getItem('consumed'));
+	var str = '\n-----------------------------'
+	str = str+'\nTotal Consumed  ->  '+cons
+	str = str+'\nSuggested  ->  '+sug
+	str = str+'\nTo be consumed  ->  '+(sug-cons)
+	alert(str)
+  }
+  saveData = () => {
+
+	console.log("Initiate Saving Data");
+	var sex = (document.getElementById("sex").value).toUpperCase();
+	var age = parseInt(document.getElementById("age").value);
+	var ht = parseInt(document.getElementById("ht").value);
+	var wt = parseInt(document.getElementById("wt").value);
+	if( isNaN(age) || isNaN(ht) || isNaN(wt) || !['M','F'].includes(sex)){
+		console.log(age)
+		console.log(ht)
+		console.log(wt)
+		console.log(sex)
+		console.log("Saving Data Failed")
+		alert("Enter data in suggested format")
+		document.location.reload(true)
+		return
+		}
+	var cal;
+	if( sex === 'M' )
+		cal = 864- (9.72*age) + (14.2*wt) + (503 * ht)
+	else
+		cal = 387- (7.31*age) + (10.9*wt) + (660 * ht)
+	console.log(cal);
+	console.log("Data saved")
+	localStorage.setItem("suggested",cal)
+	this.setState({
+	inputTaken:true
+	});
   }
 
   render() {
@@ -245,35 +302,72 @@ class App extends Component {
       imageLoading,
       imageLoadingError,
       classifyPercent,
-      topK
+      topK,
+      inputTaken
     } = this.state;
     return (
-      <div className="App">
-        <center><h1>Food Recognition with Calorie Estimation</h1></center>
-        { !modelLoaded ?
+      <div className="App"><br></br><br></br>
+	<center><div className='heading'>Food Recognition with Calorie Estimation</div></center><br></br><br></br>
+        <center><div className='sub-heading'>This app was coded for final year project by <a target="_blank" href="https://github.com/Tanya3375/">Kumari Tanya</a> (USN:1605033)</div></center><br></br>
+        { inputTaken && modelLoaded && !modelRunning ? 
+		<center>
+			<button onClick={this.showData}>Show Data</button><br></br><br></br>	
+		</center>
+		
+		: ''}
+        { !modelLoaded && !inputTaken ?
         <p className='intro'>
-          <center>To get started, click the Load Model button to load the model.</center>
+          <center><div className='sub-heading-1'>To get started, enter details and click the Save Data.</div></center><br></br>
+          <center><div className='sub-heading-1'>This will help us keep track of calories you consome and claories you can further consume</div></center><br></br>
+        </p>
+        : ''}
+	{ !modelLoaded && inputTaken && !modelLoading ?
+        <p className='intro'>
+          <center><div className='sub-heading-1'>Now click the button to load the model.</div></center><br></br>
         </p>
         : ''}
         <div className='init'>
-        { !modelLoaded && !modelLoading ? <center><button onClick={this.loadModel}>Load Model (85 MB)</button></center> : ''}
+        { !modelLoaded && !modelLoading &&!inputTaken ? 
+		<center>
+			<div className='form'>
+			<form autoComplete="off">
+				Gender : <input type='text' id='sex' placeholder='M/F' pattern='[MFmf]' required></input><br></br><br></br>
+				Age : <input type='number' id='age' placeholder='Age' required></input><br></br><br></br>
+				Height : <input type='number' id='ht' placeholder='In inches' required></input><br></br><br></br>
+				Weight : <input type='number' id='wt' placeholder='In Kilograms' required></input><br></br><br></br>
+				<button onClick={this.saveData}>Save Data</button><br></br>
+			</form>
+			</div>
+		</center>
+		
+		: ''}
+        { !modelLoaded && !modelLoading && inputTaken ? 
+		<center>
+			<button onClick={this.loadModel}>Start</button><br></br><br></br>	
+		</center>
+		
+		: ''}
+
         { !modelLoaded && modelLoading ?
-          <p className='loading'><center>LOADING MODEL: {loadingPercent}%</center></p>
+          <p className='loading'>
+<center><div className='sub-heading-1'>Your data has been saved, and the model is currently loading. Once loaded, you can start using the app</div></center><br></br>
+<center><div className='sub-heading-1'>LOADING MODEL: {loadingPercent}%</div></center><br></br>
+</p>
           : ''}
         { modelLoaded && imageLoading ?
-          <p className='loading'>LOADING IMAGE</p>
+          <p className='loading'><div className='sub-heading-1'>LOADING IMAGE</div><br></br></p>
           : ''}
         { modelLoaded && imageLoadingError ?
-          <p className='error'><center>ERROR LOADING IMAGE.<br/>TRY DIFFERENT URL</center></p>
+          <p className='error'><center><div className='sub-heading-1'>ERROR LOADING IMAGE.<br/>TRY DIFFERENT URL</div></center><br></br></p>
           : ''}
         { modelLoaded && modelRunning ?
-          <p className='loading'><center>CLASSIFYING: {classifyPercent}%</center></p>
+          <p className='loading'><center><div className='sub-heading-1'>CLASSIFYING: {classifyPercent}%</div></center><br></br></p>
           : ''}
         </div>
         <div className='interactive'>
           { modelLoaded && !modelRunning && !imageLoading ?
           <p>
-            <center>Food Image URL: <input type='text' ref={(input) => { this.urlInput = input; }}/>
+            <center>Food Image: <input type='file' id='file' ref={(input) => { this.urlInput = input; }}/>
             <br/><br/>
             <button onClick={this.classifyNewImage}>Classify Image</button></center>
           </p>
