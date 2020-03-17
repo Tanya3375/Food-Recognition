@@ -308,7 +308,7 @@ class App extends Component {
     return (
       <div className="App"><br></br><br></br>
 	<center><div className='heading'>Food Recognition with Calorie Estimation</div></center><br></br><br></br>
-        <center><div className='sub-heading'>This app was coded for final year project by <a target="_blank" href="https://github.com/Tanya3375/">Kumari Tanya</a> (USN:1605033)</div></center><br></br>
+        <center><div className='sub-heading'>This app was coded for final year project by <a target="_blank" href="https://github.com/Tanya3375/Food-Recognition">Kumari Tanya</a> (USN:1605033)</div></center><br></br>
         { inputTaken && modelLoaded && !modelRunning ? 
 		<center>
 			<button onClick={this.showData}>Show Data</button><br></br><br></br>	
