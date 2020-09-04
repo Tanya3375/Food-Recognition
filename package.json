@@ -10,7 +10,7 @@
     "lodash": "^4.17.11",
     "ndarray": "^1.0.18",
     "ndarray-ops": "^1.2.2",
-    "papaparse": "^4.6.3",
+    "papaparse": "^5.2.0",
     "react": "^15.4.2",
     "react-dom": "^15.4.2"
   },
